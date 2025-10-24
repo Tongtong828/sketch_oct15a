@@ -1,14 +1,15 @@
-// works with MKR1010 + VEML7700
+// works with MKR1010 , VEML7700 , Touch Sensor
 #include <Adafruit_VEML7700.h>
 #include <SPI.h>
 #include <WiFiNINA.h>
 #include <PubSubClient.h>
 #include "arduino_secrets.h"
-#include <utility/wifi_drv.h>  // drive RGB LED on MKR1010
+#include <utility/wifi_drv.h>  
+
+#define TOUCH_PIN 6  // define the pin of the touch sensor
 
 Adafruit_VEML7700 veml = Adafruit_VEML7700();
 
-// WiFi + MQTT settings
 const char* ssid = SECRET_SSID;
 const char* password = SECRET_PASS;
 const char* mqtt_username = SECRET_MQTTUSER;
@@ -28,13 +29,25 @@ const int num_leds = 72;
 const int payload_size = num_leds * 3;
 byte RGBpayload[payload_size];
 
-unsigned long lastPublishMs = 0;
-const unsigned long publishIntervalMs = 300;
+unsigned long lastAnimMs = 0;
+const unsigned long animStepMs = 30;
 
-// ================== SETUP ==================
+enum Mode { MODE_SENSOR = 0,
+            MODE_LAMP = 1,
+            MODE_PARTY = 2 };
+Mode mode = MODE_SENSOR;
+
+bool lastTouchState = false;
+unsigned long lastTouchChange = 0;
+const unsigned long touchDebounceMs = 400;
+
+
+
 void setup() {
+  pinMode(TOUCH_PIN, INPUT);
+
   Serial.begin(115200);
-  Serial.println("Vespera - VEML7700 Light Reactive Controller");
+  Serial.println("Vespera with VEML7700 with Touch Sensor");
 
   // Connect WiFi
   startWifi();
@@ -53,50 +66,92 @@ void setup() {
   veml.setIntegrationTime(VEML7700_IT_100MS);
 }
 
-// ================== MAIN LOOP ==================
 void loop() {
   if (!mqttClient.connected()) reconnectMQTT();
   if (WiFi.status() != WL_CONNECTED) startWifi();
   mqttClient.loop();
 
-  float lux = veml.readLux();
-  Serial.print("Lux: ");
-  Serial.println(lux);
-
-  // lux volume control colour
-  float t = constrain(map(lux, 0, 2000, 0, 1000) / 1000.0, 0.0, 1.0);
-  int r = 150 + t * (255 - 150);
-  int g = 0   + t * (200 - 0);
-  int b = 200 - t * 200;
-
-  // sent colour
-  for (int pixel = 0; pixel < num_leds; pixel++) {
-    RGBpayload[pixel * 3 + 0] = (byte)r;
-    RGBpayload[pixel * 3 + 1] = (byte)g;
-    RGBpayload[pixel * 3 + 2] = (byte)b;
-  }
-
-  // fixed time update
   unsigned long now = millis();
-  if (now - lastPublishMs >= publishIntervalMs) {
-    mqttClient.publish(mqtt_topic.c_str(), RGBpayload, payload_size);
-    lastPublishMs = now;
+
+  // touch sensor logic
+  bool touchState = digitalRead(TOUCH_PIN);  
+  if (touchState != lastTouchState && (now - lastTouchChange) > touchDebounceMs) {
+    lastTouchChange = now;
+    lastTouchState = touchState;
+
+    if (touchState == HIGH) {
+      if (mode == MODE_SENSOR) mode = MODE_LAMP;
+      else if (mode == MODE_LAMP) mode = MODE_PARTY;
+      else mode = MODE_SENSOR;
+
+      Serial.print("Mode -> ");
+      Serial.println(mode == MODE_SENSOR ? "SENSOR" : (mode == MODE_LAMP ? "LAMP" : "PARTY"));
+    }
   }
 
-  // load MKR1010 status
-  if (lux < 200) LedBlue();
-  else LedGreen();
+  int r = 0, g = 0, b = 0;
 
-  delay(200);
-}
+  //light change
+  if (mode == MODE_PARTY) {
+    // Party mode
+    if (now - lastAnimMs >= animStepMs) {
+      lastAnimMs = now;
+      for (int pixel = 0; pixel < num_leds; pixel++) {
+        if (random(0, 100) < 50) {
+          RGBpayload[pixel * 3 + 0] = random(50, 256);
+          RGBpayload[pixel * 3 + 1] = random(50, 256);
+          RGBpayload[pixel * 3 + 2] = random(50, 256);
+        } else {
+          RGBpayload[pixel * 3 + 0] *= 0.8;
+          RGBpayload[pixel * 3 + 1] *= 0.8;
+          RGBpayload[pixel * 3 + 2] *= 0.8;
+        }
+      }
+      if (mqttClient.connected()) {
+        mqttClient.publish(mqtt_topic.c_str(), RGBpayload, payload_size);
+      }
+    }
 
-void printMacAddress(byte mac[]) {
-  for (int i = 5; i >= 0; i--) {
-    if (mac[i] < 16) Serial.print("0");
-    Serial.print(mac[i], HEX);
-    if (i > 0) Serial.print(":");
+  } else if (mode == MODE_LAMP) {
+    // LAMP
+    r = 255;
+    g = 255;
+    b = 240;
+    for (int pixel = 0; pixel < num_leds; pixel++) {
+      RGBpayload[pixel * 3 + 0] = (byte)r;
+      RGBpayload[pixel * 3 + 1] = (byte)g;
+      RGBpayload[pixel * 3 + 2] = (byte)b;
+    }
+    if (mqttClient.connected()) {
+      mqttClient.publish(mqtt_topic.c_str(), RGBpayload, payload_size);
+    }
+
+  } else if (mode == MODE_SENSOR) {
+    // VEML7700
+    float lux = veml.readLux();
+    Serial.print("Lux: ");
+    Serial.println(lux);
+
+    float t = constrain(map(lux, 0, 2000, 0, 1000) / 1000.0, 0.0, 1.0);
+    int yellowR = 255, yellowG = 200, yellowB = 0;
+    int purpleR = 150, purpleG = 0, purpleB = 200;
+    r = purpleR + t * (yellowR - purpleR);
+    g = purpleG + t * (yellowG - purpleG);
+    b = purpleB + t * (yellowB - purpleB);
+
+    for (int pixel = 0; pixel < num_leds; pixel++) {
+      RGBpayload[pixel * 3 + 0] = (byte)r;
+      RGBpayload[pixel * 3 + 1] = (byte)g;
+      RGBpayload[pixel * 3 + 2] = (byte)b;
+    }
+    if (mqttClient.connected()) {
+      mqttClient.publish(mqtt_topic.c_str(), RGBpayload, payload_size);
+    }
+
+    // MKR1010 LED
+    if (lux < 200) LedBlue();
+    else LedGreen();
   }
-  Serial.println();
+
+  delay(100);
 }
-
-
