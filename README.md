@@ -15,7 +15,7 @@ The following diagram shows the physical wiring on the breadboard, illustrating 
 ###  Circuit Schematic
 The schematic diagram below provides the logical wiring overview, clearly indicating signal, power, and ground connections between the components.
 
-<img width="885" height="485" alt="image" src="https://github.com/user-attachments/assets/5a114028-6ffe-4e36-bb1e-0431614e3351" />
+<img width="906" height="514" alt="image" src="https://github.com/user-attachments/assets/69be4790-e0fe-43da-8585-f05685ade56b" />
 
 
 ##  System Operation
