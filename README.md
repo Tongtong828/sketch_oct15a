@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #  CASA0014 Coursework
 
 ##  Project Overview
