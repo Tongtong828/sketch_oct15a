@@ -9,11 +9,14 @@ The system dynamically changes its lighting mode based on sensor input and user 
 
 ###  Breadboard Layout
 The following diagram shows the physical wiring on the breadboard, illustrating how the VEML7700 light sensor and touch sensor are connected to the Arduino MKR WiFi 1010.
-![Breadboard Diagram](421272c0-e44d-4248-93b1-0d114baa9a94.png)
+<img width="905" height="1112" alt="Untitled Sketch 4_bb" src="https://github.com/user-attachments/assets/79bda03f-6baf-4477-abeb-4a0e9d8f6769" />
+
 
 ###  Circuit Schematic
 The schematic diagram below provides the logical wiring overview, clearly indicating signal, power, and ground connections between the components.
-![Circuit Schematic](b9015982-5f20-4c00-991a-ea1022cf0450.png)
+
+<img width="906" height="514" alt="image" src="https://github.com/user-attachments/assets/69be4790-e0fe-43da-8585-f05685ade56b" />
+
 
 ## Code Files Description
 
