@@ -40,11 +40,13 @@ The schematic diagram below provides the logical wiring overview, clearly indica
 ### **Internal circuit and component layout** 
 
 Inside the enclosure, the Arduino MKR WiFi 1010, VEML7700 light sensor, and touch sensor are mounted securely on a mini breadboard. The wiring follows the circuit schematic shown earlier.
+![047665ea591e08fe7e61d096ec8c66be](https://github.com/user-attachments/assets/c3531a21-6a1d-4b01-8f92-5da7427420d9)
 
-<img src="E:\xwechat_files\wxid_bsl44snd0b1c22_e9d8\temp\RWTemp\2025-10\047665ea591e08fe7e61d096ec8c66be.jpg" alt="047665ea591e08fe7e61d096ec8c66be" style="zoom: 50%;" />
+
 
 ### External cardboard appearance display
 
 The outer enclosure of the prototype is made from a hand-crafted cardboard box. It protects the circuit from external contact and gives the luminaire a clean, minimal appearance. A small window on one side allows the VEML7700 light sensor to detect ambient brightness, while another opening provides access to the touch sensor.
 
-<img src="E:\xwechat_files\wxid_bsl44snd0b1c22_e9d8\temp\RWTemp\2025-10\0ed401ca0b138aaffc4fda34972ae88c.jpg" alt="0ed401ca0b138aaffc4fda34972ae88c" style="zoom:50%;" />
+![1c6244ed2c8d900c523fa35a6fcaab25](https://github.com/user-attachments/assets/6516b3d2-6ed4-4e80-a2a1-9586fba9a374)
+
