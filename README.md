@@ -40,7 +40,7 @@ The schematic diagram below provides the logical wiring overview, clearly indica
 To help visualize how the Vespera operates in different modes, a short demonstration video has been provided below.
  The video showcases how the light transitions between the three modes: Light Sensor Mode, Lamp Mode, and Party Mode，in real time.
 
-[The effect simulation test Video]: https://github.com/Tongtong828/sketch_oct15a/blob/main/Effect%20Simulation%20Test.mp4
+ https://github.com/Tongtong828/sketch_oct15a/blob/main/Effect%20Simulation%20Test.mp4
 
 ## Final Work
 
