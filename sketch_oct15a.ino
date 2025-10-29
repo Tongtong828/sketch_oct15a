@@ -8,6 +8,7 @@
 
 #define TOUCH_PIN 6 // define the pin of the touch sensor
 
+// Create VEML7700 light sensor object
 Adafruit_VEML7700 veml = Adafruit_VEML7700();
 
 const char* ssid = SECRET_SSID;
@@ -28,33 +29,38 @@ String lightId = "22";
 String mqtt_topic = "student/CASA0014/luminaire/" + lightId;
 String clientId = "Tong";  
 
-const int num_leds = 72;
+// LED configuration
+const int num_leds = 72; // total LED count
 const int payload_size = num_leds * 3;  
 byte RGBpayload[payload_size];
 
-// Party mode
+// Animation control for Party Mode
 float hue = 0.0f;  
 unsigned long lastAnimMs = 0;
 const unsigned long animStepMs = 30;
 
-// The mode controled by touch sensor
+// The mode selection controled by touch sensor
 enum Mode { MODE_SENSOR = 0,
             MODE_LAMP = 1,
             MODE_PARTY = 2 };
-Mode mode = MODE_SENSOR;
+Mode mode = MODE_SENSOR; // default mode: light sensor
 
+// Touch sensor debouncing
 bool lastTouchState = false;
 unsigned long lastTouchChange = 0;
 const unsigned long touchDebounceMs = 400;
 
+// MQTT publish timing
 unsigned long lastPublishMs = 0;
 const unsigned long publishIntervalMs = 250;
 
+// Variables for storing last LED color
 int lastR = -1, lastG = -1, lastB = -1;
 
 
 
 void setup() {
+  // Set touch sensor pin as input
   pinMode(TOUCH_PIN, INPUT);
 
   Serial.begin(115200);
@@ -68,7 +74,7 @@ void setup() {
   mqttClient.setBufferSize(2000);
   mqttClient.setCallback(callback);
 
-  // print your MAC address:
+  // print device info
   byte mac[6];
   WiFi.macAddress(mac);
   Serial.print("MAC address: ");
@@ -81,7 +87,7 @@ void setup() {
   // initialize VEML7700
   if (!veml.begin()) {
     Serial.println("Error: VEML7700 not found. Check wiring!");
-    while (1);
+    while (1); // stop execution if sensor not found
   }
   Serial.println("VEML7700 sensor ready.");
   veml.setGain(VEML7700_GAIN_1);
@@ -90,7 +96,7 @@ void setup() {
 }
 
 void loop() {
-  // Network connection
+  // Ensure Network connection
   if (!mqttClient.connected()) reconnectMQTT();
   if (WiFi.status() != WL_CONNECTED) startWifi();
   mqttClient.loop();
@@ -103,12 +109,13 @@ void loop() {
     lastTouchChange = now;
     lastTouchState = touchState;
 
+// Cycle through three modes each time the touch sensor is pressed
     if (touchState == HIGH) {
       if (mode == MODE_SENSOR) mode = MODE_LAMP;
       else if (mode == MODE_LAMP) mode = MODE_PARTY;
       else mode = MODE_SENSOR;
 
-      lastR = lastG = lastB = -1;
+      lastR = lastG = lastB = -1; // reset color tracking
       Serial.print("Mode -> ");
       Serial.println(mode == MODE_SENSOR ? "SENSOR" : (mode == MODE_LAMP ? "LAMP" : "PARTY"));
     }
@@ -118,15 +125,15 @@ void loop() {
 
   // Party mode
   if (mode == MODE_PARTY) {
-    // random shining
+    // random colour
     if (now - lastAnimMs >= animStepMs) {
       lastAnimMs = now;
-      for (int pixel = 0; pixel < num_leds; pixel++) {
+      for (int pixel = 0; pixel < num_leds; pixel++) {  // 50% chance for random bright color, 50% for fading
         if (random(0, 100) < 50) {
           RGBpayload[pixel * 3 + 0] = random(50, 256);
           RGBpayload[pixel * 3 + 1] = random(50, 256);
           RGBpayload[pixel * 3 + 2] = random(50, 256);
-        } else {
+        } else {  // fade effect
           RGBpayload[pixel * 3 + 0] *= 0.8;
           RGBpayload[pixel * 3 + 1] *= 0.8;
           RGBpayload[pixel * 3 + 2] *= 0.8;
@@ -138,7 +145,7 @@ void loop() {
     }
 // Nomal Lamp mode
   } else if (mode == MODE_LAMP) {
-    // Lamp colour
+    // Lamp colour  setting
     r = 255;
     g = 255;
     b = 240;
@@ -153,11 +160,12 @@ void loop() {
   } 
   // Back to light sensor mode 
   else if (mode == MODE_SENSOR) {
-  float lux = veml.readLux();
+  float lux = veml.readLux(); // read ambient light value
   Serial.print("Lux: ");
   Serial.println(lux);
 
   // lux volume control colour
+  // Map light level (lux) to color range
   float t = constrain(map(lux, 0, 2000, 0, 1000) / 1000.0, 0.0, 1.0);
   int targetR = 120 + t * (255 - 120);
   int targetG = 0   + t * (220 - 0);
@@ -170,7 +178,7 @@ void loop() {
   // smoothly change
   static float smoothR[72], smoothG[72], smoothB[72];
 
-  // define rgb light
+  // define rgb light layout
   const int leds_per_row = 12;   
   const int num_rows = 6;        
 
@@ -191,11 +199,12 @@ void loop() {
     RGBpayload[pixel * 3 + 1] = (byte)smoothG[pixel];
     RGBpayload[pixel * 3 + 2] = (byte)smoothB[pixel];
   }
-
+// Send color data to MQTT
   if (mqttClient.connected()) {
     mqttClient.publish(mqtt_topic.c_str(), RGBpayload, payload_size);
   }
 
+Change onboard LED color based on brightness
   if (lux < 200) LedBlue(); 
   else LedGreen();
 }
@@ -213,6 +222,7 @@ void loop() {
 //   delay(1000);
 // }
 
+// Print MAC address
 void printMacAddress(byte mac[]) {
   for (int i = 5; i >= 0; i--) {
     if (mac[i] < 16) {
