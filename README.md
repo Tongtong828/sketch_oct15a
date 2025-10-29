@@ -41,6 +41,7 @@ To help visualize how the Vespera operates in different modes, a short demonstra
  The video showcases how the light transitions between the three modes: Light Sensor Mode, Lamp Mode, and Party Mode，in real time.
 
  https://github.com/Tongtong828/sketch_oct15a/blob/main/Effect%20Simulation%20Test.mp4
+ Feel sorry to you have to download the video.
 
 ## Final Work
 
